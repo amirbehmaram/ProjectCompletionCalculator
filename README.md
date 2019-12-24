@@ -1,3 +1,12 @@
+# Project Completion Calcultor
+This project is a React solution to [this challenge](https://github.com/nitishn/js-trials/tree/master/business-day-calculator)
+
+I just wanted to mess around with React and figured this was as good a time as any to try it out.
+
+The basic idea is you take a start date and and number of hours, assuming you work 6 hours a day how long would it take you to finish
+the project not inlcuding weekends.
+
+## Running this Project
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
