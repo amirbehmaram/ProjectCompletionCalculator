@@ -15,25 +15,53 @@ class ProjectCompletionCalc extends React.Component {
     updateHours(e) {  
         // We want to update the end date after we set the hours so call End Date update via callback   
         this.setState(
-            { hours: e.target.value }, 
+            { hours: parseInt(e.target.value) }, 
             this.updateEndDate
         );
     }
 
     updateStartDate(e) {
-        this.setState({startDate: e.target.value});
+        this.setState(
+            {startDate: e.target.value},
+            this.updateEndDate
+        );
     }
 
     updateEndDate() {
-        // If it's under 6 hours then just say today.
-        if (this.state.hours < 6) {
-            this.setState({ endDate: Moment(this.state.startDate) });
+        let actualNumDays;
+
+        // If it's under 6 hours then just say today, accounting for if today is a weekend.
+        if (this.state.hours <= 6) {
+            let startDate = Moment(this.state.startDate);
+
+            if (startDate.isoWeekday() === 6) {
+                actualNumDays = 2;
+            } else if (startDate.isoWeekday() === 7) {
+                actualNumDays = 1;
+            } else {
+                actualNumDays = 0;
+            }
         } else {
-            // We want the ceiling because the work would overflow into the next day if we get a fraction
+            // We want the ceiling because the work would overflow into the next day if we have a remainder
             let numDays = Math.ceil(this.state.hours / 6);
-            let endDateVal = Moment(this.state.startDate).add(numDays, 'days').calendar();
-            this.setState({ endDate: endDateVal });
+            let startDate = Moment(this.state.startDate);
+            actualNumDays = numDays;
+
+            // Account for weekends because work suxs on the weekends.
+            for (let i = 0; i < numDays; i++) {
+                let tempDate = Moment(startDate).add(i, 'days');
+                console.log(tempDate.toString());
+
+                if (tempDate.isoWeekday() === 6 || tempDate.isoWeekday() === 7) {
+                    actualNumDays += 1;
+                }
+            }
+
+            console.log("Num Days: " + numDays);
+            console.log("Actual Days: " + actualNumDays);   
         }
+
+        this.setState({ endDate: Moment(this.state.startDate).add(actualNumDays, 'days').calendar() });
     }
 
     render() {
@@ -43,7 +71,7 @@ class ProjectCompletionCalc extends React.Component {
                 <form className="calculator__form">
                 <div className="calculator__form-block">
                         <label htmlFor="StartDate">Start Date: </label>
-                        <input 
+                        <input
                             id="StartDate" 
                             type="date" 
                             value={this.state.startDate} 
@@ -52,7 +80,7 @@ class ProjectCompletionCalc extends React.Component {
                     </div>
                     <div className="calculator__form-block">
                         <label htmlFor="HoursInput">Hours Given: </label>
-                        <input 
+                        <input
                             id="HoursInput" 
                             type="number" 
                             value={this.state.hours} 
