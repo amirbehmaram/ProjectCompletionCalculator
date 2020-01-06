@@ -4,6 +4,7 @@ import './Calculator.css';
 
 class ProjectCompletionCalc extends React.Component {
     constructor() {
+        // Have to call super to give our components access to these bad boys
         super();
         this.state = {
             hours: 0,
@@ -21,6 +22,7 @@ class ProjectCompletionCalc extends React.Component {
     }
 
     updateStartDate(e) {
+        // We want to update the end date after we set the start date also so call End Date update via callback 
         this.setState(
             {startDate: e.target.value},
             this.updateEndDate
@@ -29,11 +31,11 @@ class ProjectCompletionCalc extends React.Component {
 
     updateEndDate() { 
         let actualEndDate;
+        let startDate = Moment(this.state.startDate);
 
         // If it's under 6 hours then just say today, accounting for if today is a weekend.
         if (this.state.hours <= 6) {
             let actualNumDays = 0;
-            let startDate = Moment(this.state.startDate);
 
             if (startDate.isoWeekday() === 6) {
                 actualNumDays = 2;
@@ -47,38 +49,62 @@ class ProjectCompletionCalc extends React.Component {
         } else {
             // We want the ceiling because the work would overflow into the next day if we have a remainder
             let numDays = Math.ceil(this.state.hours / 6);
-
-            console.log("Number of days of work: " + numDays);
-
-            // Minus 1 from number of Days since add skips today's work
-            numDays -= 1;
-
-            let calcEndDate = Moment(this.state.startDate).add(numDays, 'days');
-
-            console.log("Calculated End: " + calcEndDate.toString());
-
-            // What we can use to determine whether or not to add days.
-            // Will need to add in the loop to go through all the days and count
-            // How many weekends we are going to skip through still
-            if (calcEndDate.isoWeekday() === 6) {
-                actualEndDate =  Moment(this.state.startDate).add(numDays + 2, 'days').format("dddd, MM/DD/YYYY");
-            } else if (calcEndDate.isoWeekday() === 7) {
-                actualEndDate =  Moment(this.state.startDate).add(numDays + 2, 'days').format("dddd, MM/DD/YYYY");
-            } else {
-                actualEndDate = Moment(this.state.startDate).add(numDays, 'days').format("dddd, MM/DD/YYYY");
-            }  
             
-            console.log("Actual End: " + actualEndDate);
+            // Inclusive of today
+            numDays -= 1;
+            let calcEndDate = Moment(this.state.startDate).add(numDays, 'days');
+            this.adjustForWeekends(calcEndDate);
+
+            // Get the number of weeks between the start and end so we can figure out how many
+            // Weekend days we will need to skip.
+            let numWeeks = calcEndDate.diff(startDate, 'weeks');
+            let weekendDaysToAdd = numWeeks * 2;
+            let additionalDays = 0;
+
+            // Check if the new date will overlap any additional weekends and get an additional count of them
+            for (let i = 1; i <= weekendDaysToAdd; i++) {
+                let tempDate = Moment(this.state.startDate).add(numDays, 'days');
+                let dayOfWeek = tempDate.add(i, 'days');
+
+                if (dayOfWeek.isoWeekday() === 6 || dayOfWeek.isoWeekday() === 7) {
+                    additionalDays++;
+                }
+            }
+
+            /**
+             * Add numDays which is just our sum total of days including weekends.
+             * Add weekendDaysToAdd which is how many weekends were included in numDays
+             * Add additionalDays which account for any weekends that were added from the result of numDays + weekendDaysToAdd
+             */
+            actualEndDate = Moment(this.state.startDate).add((numDays + weekendDaysToAdd + additionalDays), 'days');
+            this.adjustForWeekends(actualEndDate);
+            
+            actualEndDate = actualEndDate.format("dddd, MM/DD/YYYY");
         }
 
-        // Define and update our End Date
         this.setState({ endDate: actualEndDate });
+    }
+
+    /**
+     * Accepts a Moment.js obj and moves the date of it to the neatest weekday
+     * 
+     * @param {*} momentObj A Moment.js obj
+     * 
+     * @return null Since its an object it gets passed by reference so that's rad
+     */
+    adjustForWeekends(momentObj) {
+        if (momentObj.isoWeekday() === 6) {
+            momentObj.add(2, 'days');
+        } else if (momentObj.isoWeekday() === 7) {
+            momentObj.add(1, 'days');
+        }
     }
 
     render() {
         return (
             <section className="calculator">
                 <h1 className="calculator__title">Project Completion Calculator</h1>
+                <p><b>The otter will do the math for you.</b></p>
                 <form className="calculator__form">
                 <div className="calculator__form-block">
                         <label htmlFor="StartDate">Start Date: </label>
